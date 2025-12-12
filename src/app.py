@@ -4,113 +4,101 @@ import joblib
 import numpy as np
 import os
 
+# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Predicción Hipotecaria TFM", layout="centered")
-
 st.title("🏠 Predicción de Ejecuciones Hipotecarias")
 
-# --- FUNCIÓN DE CARGA ROBUSTA (SOLUCIÓN DE RUTAS) ---
+# --- FUNCIÓN DE CARGA DE DATOS ---
 @st.cache_resource
 def load_resources():
-    # 1. Obtener la ruta absoluta de este archivo (app.py)
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 1. Truco para encontrar los archivos esten donde esten
+    # Obtenemos la ruta donde está este archivo (src/app.py)
+    ruta_actual = os.path.dirname(os.path.abspath(__file__))
+    # Subimos un nivel para llegar a la raíz del proyecto
+    ruta_raiz = os.path.dirname(ruta_actual)
     
-    # 2. Subir un nivel para llegar a la raíz del proyecto (donde están 'models' y 'data')
-    root_path = os.path.dirname(current_dir)
+    # 2. Construimos las rutas completas a los archivos
+    model_path = os.path.join(ruta_raiz, 'models', 'modelo_ejecuciones.joblib')
+    data_path = os.path.join(ruta_raiz, 'data', 'datos_historicos.csv')
     
-    # 3. Construir las rutas exactas
-    model_path = os.path.join(root_path, 'models', 'modelo_ejecuciones.joblib')
-    data_path = os.path.join(root_path, 'data', 'datos_historicos.csv')
-    
-    # (Opcional) Imprimir rutas en los logs del servidor para depurar
+    # (Opcional) Chivato para ver en los logs dónde está buscando
     print(f"Buscando modelo en: {model_path}")
-    print(f"Buscando datos en: {data_path}")
 
-    # 4. Comprobación de seguridad
+    # 3. Verificamos si existen antes de cargar
     if not os.path.exists(model_path) or not os.path.exists(data_path):
-        # Si falla, devolvemos las rutas para que sepas dónde está buscando
+        # Devolvemos None y las rutas para mostrar el error
         return None, None, model_path, data_path
 
+    # 4. Cargamos el modelo y los datos
     try:
         model = joblib.load(model_path)
         df = pd.read_csv(data_path)
         return model, df, model_path, data_path
     except Exception as e:
-        st.error(f"Error leyendo archivos: {e}")
+        st.error(f"Error técnico leyendo archivos: {e}")
         return None, None, model_path, data_path
 
-# Ejecutar la carga
-model, df_clean, m_path, d_path = load_resources()
+# Ejecutamos la carga
+model, df_clean, ruta_modelo, ruta_datos = load_resources()
 
-if model is not None:
-    st.success("✅ Modelo y datos cargados correctamente.")
+# --- INTERFAZ DE LA APLICACIÓN ---
+if model is not None and df_clean is not None:
+    st.success("✅ Sistema cargado y listo.")
     
-    # --- TU LÓGICA DE LA APP ---
-    # Selectores
+    # Panel lateral de configuración
+    st.sidebar.header("Parámetros de Predicción")
+    
+    # Selectores automáticos basados en los datos
     comunidades = sorted(df_clean['com_nom'].unique())
     titulares = sorted(df_clean['titular'].unique())
     
-    st.sidebar.header("Configuración")
-    comunidad = st.sidebar.selectbox("Comunidad", comunidades)
-    titular = st.sidebar.selectbox("Titular", titulares)
-    anio = st.sidebar.slider("Año", 2025, 2030, 2025)
+    comunidad = st.sidebar.selectbox("Comunidad Autónoma", comunidades)
+    titular = st.sidebar.selectbox("Tipo de Titular", titulares)
+    anio = st.sidebar.slider("Año a predecir", 2025, 2030, 2025)
     
-    if st.sidebar.button("Predecir"):
-        # Lógica simplificada para demo
+    # Botón de predicción
+    if st.sidebar.button("Calcular Predicción", type="primary"):
+        # Buscamos el último dato real para usarlo como base (Lags)
         mask = (df_clean['com_nom'] == comunidad) & (df_clean['titular'] == titular)
         
-        # Obtener último valor real disponible para usar como 'lag'
         if not df_clean[mask].empty:
-            val_real = df_clean[mask]['total'].iloc[-1]
+            # Cogemos el último valor conocido de 'total'
+            val_real = df_clean[mask].sort_values('periodo')['total'].iloc[-1]
         else:
-            val_real = 0
+            val_real = 0 # Valor por defecto si no hay datos
         
-        # Crear DataFrame de entrada con las columnas que espera el modelo
+        # Preparamos los datos para el modelo (mismo formato que en el entrenamiento)
         input_data = pd.DataFrame({
             'periodo': [anio], 
-            'lag_1': [val_real], 
-            'lag_2': [val_real], 
-            'rolling_mean_2': [val_real],
             'com_nom': [comunidad], 
-            'titular': [titular]
+            'titular': [titular],
+            'lag_1': [val_real],        # Asumimos inercia del último año
+            'lag_2': [val_real],        # Simplificación para la demo
+            'rolling_mean_2': [val_real]
         })
         
         try:
-            pred = model.predict(input_data)[0]
-            st.metric(f"Predicción {anio}", int(pred))
+            # Hacemos la predicción
+            prediccion = model.predict(input_data)[0]
+            
+            # Mostramos el resultado
+            st.divider()
+            st.subheader(f"Resultados para {comunidad} ({anio})")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric(label="Ejecuciones Previstas", value=f"{int(prediccion)}")
+            with col2:
+                st.info(f"Basado en último dato real: {int(val_real)}")
+                
         except Exception as e:
-            st.error(f"Error en la predicción: {e}")
-            st.write("Verifica que las columnas del Excel coinciden con las del entrenamiento.")
+            st.error(f"Error al generar la predicción: {e}")
+            st.write("Detalles para depuración:", input_data)
 
 else:
-    #Mensaje de error detallado si falla la carga
-    st.error("⚠️ Faltan archivos.")
-    st.warning(f"La app está buscando el modelo aquí:\n{m_path}")
-    st.warning(f"Y los datos aquí:\n{d_path}")
-    st.info("Asegúrate de que las carpetas 'models' y 'data' están en la raíz del repositorio en GitHub.")
-
-if model is not None:
-    st.success("✅ Modelo y datos cargados correctamente.")
-    
-    #Selectores
-    comunidades = sorted(df_clean['com_nom'].unique())
-    titulares = sorted(df_clean['titular'].unique())
-    
-    st.sidebar.header("Configuración")
-    comunidad = st.sidebar.selectbox("Comunidad", comunidades)
-    titular = st.sidebar.selectbox("Titular", titulares)
-    anio = st.sidebar.slider("Año", 2025, 2030, 2025)
-    
-    if st.sidebar.button("Predecir"):
-        # Lógica simplificada para demo
-        mask = (df_clean['com_nom'] == comunidad) & (df_clean['titular'] == titular)
-        val_real = df_clean[mask]['total'].iloc[-1] if not df_clean[mask].empty else 0
-        
-        input_data = pd.DataFrame({
-            'periodo': [anio], 'com_nom': [comunidad], 'titular': [titular],
-            'lag_1': [val_real], 'lag_2': [val_real], 'rolling_mean_2': [val_real]
-        })
-        
-        pred = model.predict(input_data)[0]
-        st.metric(f"Predicción {anio}", int(pred))
-else:
-    st.error("⚠️ Faltan archivos en 'models/' o 'data/'.")
+    # --- PANTALLA DE ERROR SI NO ENCUENTRA LOS ARCHIVOS ---
+    st.error("⚠️ Error Crítico: No se encuentran los archivos de datos.")
+    st.warning("El sistema está buscando en estas rutas:")
+    st.code(f"Modelo: {ruta_modelo}")
+    st.code(f"Datos: {ruta_datos}")
+    st.info("Por favor, verifica que las carpetas 'models' y 'data' están en la raíz de tu GitHub.")
