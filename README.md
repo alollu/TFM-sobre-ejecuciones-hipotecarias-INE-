@@ -1,37 +1,22 @@
-# Análisis y Predicción de Ejecuciones Hipotecarias en España
-Este proyecto de Data Science analiza la evolución de las ejecuciones hipotecarias en España (datos INE) y desarrolla un modelo predictivo basado en Machine Learning para anticipar tendencias en el periodo 2025-2027.
+# 🏠 Predicción de Ejecuciones Hipotecarias en España
 
-Trabajo de Fin de Máster (TFM) - Road to Data Science.
+Este proyecto es parte del Trabajo Fin de Máster (TFM) sobre el análisis y predicción de ejecuciones hipotecarias utilizando datos del INE.
 
-![Python](https://img.shields.io/badge/python-3.10-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Status](https://img.shields.io/badge/status-draft-orange)
-
+## 🔗 Enlace a la Aplicación
+Puedes probar el modelo interactivo aquí:
+👉 **[https://tfm-ejecuciones-hipotecarias.streamlit.app](https://tfm-ejecuciones-hipotecarias.streamlit.app)**
 
 ## 🎯 Objetivo
-Identificar patrones temporales y geográficos en las ejecuciones hipotecarias y proporcionar una herramienta predictiva que ayude a anticipar volúmenes futuros por Comunidad Autónoma y tipo de titular.
+El objetivo es anticipar tendencias en el mercado inmobiliario utilizando modelos de Machine Learning (**Linear Regression**, validado frente a XGBoost y Random Forest).
 
-## 🗂️ Estructura del Proyecto
-* **`data/`**: Contiene los datasets históricos (procesados y raw).
-* **`notebooks/`**:
-    * `01_Analisis_EDA.ipynb`: Limpieza de datos y análisis exploratorio.
-    * `02_Modelado_Prediccion.ipynb`: Ingeniería de variables, entrenamiento (XGBoost) y validación.
-* **`models/`**: Archivo binario del modelo entrenado (`modelo_ejecuciones.joblib`).
-* **`src/`**: Código fuente de la aplicación de despliegue.
+## 🛠️ Tecnologías
+- **Python**: Lenguaje principal.
+- **Scikit-Learn**: Entrenamiento del modelo.
+- **Streamlit**: Interfaz web interactiva.
+- **Pandas**: Procesamiento de datos.
 
-## 🛠️ Tecnologías Utilizadas
-* **Lenguaje:** Python 3.9+
-* **Manipulación de Datos:** Pandas, Numpy.
-* **Visualización:** Matplotlib, Seaborn.
-* **Machine Learning:** XGBoost (Modelo seleccionado), Scikit-learn.
-* **Forecasting:** Prophet, Series Temporales.
-* **Despliegue:** Streamlit.
-
-## 📊 Resultados Destacados
-* El modelo basado en **Gradient Boosting (XGBoost)** superó a los modelos lineales y ARIMA, logrando una mayor precisión gracias a la incorporación de variables de retardo (*lags*).
-* Se observa una **tendencia de estabilización** para el periodo 2025-2027, aunque regiones como Cataluña, Comunidad Valenciana y Andalucía mantienen los mayores volúmenes absolutos.
-
-## 🚀 Cómo ejecutar la App (Streamlit)
-Para visualizar las predicciones de forma interactiva:
-
-1. Instalar dependencias:
-   ```bash
-   pip install -r requirements.txt
+## 📂 Estructura
+- `data/`: Contiene los datos históricos procesados.
+- `models/`: Contiene el modelo entrenado (`.joblib`).
+- `src/`: Código fuente de la aplicación (`app.py`).
+- `notebooks/`: Cuadernos de análisis y entrenamiento.
