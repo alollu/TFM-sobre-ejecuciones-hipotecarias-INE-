@@ -1,35 +1,35 @@
+#importo Librerías
 import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
 import os
 
-# --- CONFIGURACIÓN DE PÁGINA ---
+# CONFIGURACIÓN DE PÁGINA 
 st.set_page_config(page_title="Predicción Hipotecaria TFM", layout="centered")
 st.title("🏠 Predicción de Ejecuciones Hipotecarias")
 
-# --- FUNCIÓN DE CARGA DE DATOS ---
+# FUNCIÓN DE CARGA DE DATOS
 @st.cache_resource
 def load_resources():
-    # 1. Truco para encontrar los archivos esten donde esten
-    # Obtenemos la ruta donde está este archivo (src/app.py)
+    #1.Obtenemos la ruta donde está este archivo (src/app.py)
     ruta_actual = os.path.dirname(os.path.abspath(__file__))
     # Subimos un nivel para llegar a la raíz del proyecto
     ruta_raiz = os.path.dirname(ruta_actual)
     
-    # 2. Construimos las rutas completas a los archivos
+    #2.Construimos las rutas completas a los archivos
     model_path = os.path.join(ruta_raiz, 'models', 'modelo_ejecuciones.joblib')
     data_path = os.path.join(ruta_raiz, 'data', 'datos_historicos.csv')
     
-    # (Opcional) Chivato para ver en los logs dónde está buscando
+    # para ver en los logs dónde está buscando
     print(f"Buscando modelo en: {model_path}")
 
-    # 3. Verificamos si existen antes de cargar
+    #3.Verificamos si existen antes de cargar
     if not os.path.exists(model_path) or not os.path.exists(data_path):
         # Devolvemos None y las rutas para mostrar el error
         return None, None, model_path, data_path
 
-    # 4. Cargamos el modelo y los datos
+    #4.Cargamos el modelo y los datos
     try:
         model = joblib.load(model_path)
         df = pd.read_csv(data_path)
@@ -38,10 +38,10 @@ def load_resources():
         st.error(f"Error técnico leyendo archivos: {e}")
         return None, None, model_path, data_path
 
-# Ejecutamos la carga
+#Ejecutamos la carga
 model, df_clean, ruta_modelo, ruta_datos = load_resources()
 
-# --- INTERFAZ DE LA APLICACIÓN ---
+#  INTERFAZ DE LA APLICACIÓN 
 if model is not None and df_clean is not None:
     st.success("✅ Sistema cargado y listo.")
     
@@ -78,10 +78,10 @@ if model is not None and df_clean is not None:
         })
         
         try:
-            # Hacemos la predicción
+            #Hacemos la predicción
             prediccion = model.predict(input_data)[0]
             
-            # Mostramos el resultado
+            #Mostramos el resultado
             st.divider()
             st.subheader(f"Resultados para {comunidad} ({anio})")
             
@@ -96,7 +96,7 @@ if model is not None and df_clean is not None:
             st.write("Detalles para depuración:", input_data)
 
 else:
-    # --- PANTALLA DE ERROR SI NO ENCUENTRA LOS ARCHIVOS ---
+    # PANTALLA DE ERROR SI NO ENCUENTRA LOS ARCHIVOS 
     st.error("⚠️ Error Crítico: No se encuentran los archivos de datos.")
     st.warning("El sistema está buscando en estas rutas:")
     st.code(f"Modelo: {ruta_modelo}")
